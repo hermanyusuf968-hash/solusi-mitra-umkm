@@ -22,7 +22,7 @@ requests==2.32.3             # HTTP client
 httpx==0.28.1                # Async HTTP client (dibutuhkan FastAPI test client)
 
 # --- AI SDKs ---
-google-generativeai==0.7.2   # Google Gemini API SDK
+google-generativeai==0.8.6   # Google Gemini API SDK
 openai==1.94.0               # OpenAI SDK (opsional, sebagai alternatif)
 
 # --- Production Server ---
