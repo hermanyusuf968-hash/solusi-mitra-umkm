@@ -21,13 +21,13 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME     = os.getenv("DB_NAME", "ai_konsultasi_db")
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# ─── Bangun Connection URL ──────────────────────────────────────────────────
-# Prioritas:
-#   1. DATABASE_URL environment variable (Railway auto-inject)
-#   2. Individual DB_* variables (manual config)
-#   3. SQLite local fallback (development / tanpa database eksternal)
+def is_placeholder(val: str) -> bool:
+    if not val:
+        return True
+    placeholders = ["host:port", "your_", "user:password", "your_password"]
+    return any(p in val.lower() for p in placeholders)
 
-if DATABASE_URL:
+if DATABASE_URL and not is_placeholder(DATABASE_URL):
     connection_url = DATABASE_URL
     # Railway mungkin memberikan URL dengan prefix "mysql://" (tanpa driver).
     # SQLAlchemy 2.x membutuhkan driver eksplisit, jadi kita ubah ke "mysql+pymysql://".
@@ -36,7 +36,7 @@ if DATABASE_URL:
     # Jika Railway memberikan prefix "postgresql://" (untuk PostgreSQL), ubah juga.
     if connection_url.startswith("postgres://"):
         connection_url = connection_url.replace("postgres://", "postgresql://", 1)
-elif DB_HOST:
+elif DB_HOST and not is_placeholder(DB_HOST):
     # Format: dialect+driver://user:password@host:port/dbname
     connection_url = (
         f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
