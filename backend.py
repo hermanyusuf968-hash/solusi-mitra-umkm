@@ -35,7 +35,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ─── Konfigurasi AI ──────────────────────────────────────────────────────────
-AI_PROVIDER   = os.getenv("AI_PROVIDER", "openai").lower()
+AI_PROVIDER   = os.getenv("AI_PROVIDER", "gemini").lower()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
