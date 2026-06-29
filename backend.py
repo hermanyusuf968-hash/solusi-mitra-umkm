@@ -55,10 +55,10 @@ app = FastAPI(
 # Izinkan origin frontend Vercel serta localhost untuk development.
 # Di production, pastikan domain frontend Anda tetap terdaftar.
 allowed_origins = [
-    origin.strip()
+    origin.strip().rstrip("/")
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "https://suksesmitraumkm.vercel.app"
+        "https://solusimitraumkm.vercel.app"
     ).split(",")
     if origin.strip()
 ]
