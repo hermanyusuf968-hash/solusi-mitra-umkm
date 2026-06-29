@@ -76,9 +76,9 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Jalankan inisialisasi saat aplikasi pertama kali start."""
-    logger.info("🚀 Starting AI Business Consultation API...")
+    logger.info("Starting AI Business Consultation API...")
     init_db()  # Buat tabel jika belum ada
-    logger.info(f"🤖 AI Provider: {AI_PROVIDER.upper()}")
+    logger.info(f"AI Provider: {AI_PROVIDER.upper()}")
 
 
 # ============================================================
@@ -165,7 +165,7 @@ def call_gemini_api(prompt: str) -> dict:
         # Konfigurasi API key
         genai.configure(api_key=GOOGLE_API_KEY)
         
-        logger.info("📡 Sending request to Gemini API...")
+        logger.info("Sending request to Gemini API...")
         
         # Gunakan Gemini Pro dengan text generation
         model = genai.GenerativeModel("gemini-1.5-flash")
@@ -182,7 +182,7 @@ def call_gemini_api(prompt: str) -> dict:
         
         # Ambil teks respons
         raw_text = response.text.strip() if response.text else ""
-        logger.info(f"✅ Gemini API responded ({len(raw_text)} chars)")
+        logger.info(f"Gemini API responded ({len(raw_text)} chars)")
         
         # Bersihkan jika ada markdown code fence (```json ... ```)
         if raw_text.startswith("```"):
@@ -194,10 +194,10 @@ def call_gemini_api(prompt: str) -> dict:
         return json.loads(raw_text), "gemini-1.5-flash"
 
     except json.JSONDecodeError as e:
-        logger.error(f"❌ Failed to parse Gemini response as JSON: {e}")
+        logger.error(f"Failed to parse Gemini response as JSON: {e}")
         raise ValueError(f"AI mengembalikan format yang tidak valid: {str(e)}")
     except Exception as e:
-        logger.error(f"❌ Gemini API error: {e}")
+        logger.error(f"Gemini API error: {e}")
         raise
 
 
@@ -217,7 +217,7 @@ def call_openai_api(prompt: str) -> dict:
         
         client = OpenAI(api_key=OPENAI_API_KEY)
         
-        logger.info("📡 Sending request to OpenAI API...")
+        logger.info("Sending request to OpenAI API...")
         response = client.chat.completions.create(
             model="gpt-4o-mini",           # Model hemat biaya untuk MVP
             response_format={"type": "json_object"},  # Mode JSON: SELALU kembalikan JSON
@@ -236,15 +236,15 @@ def call_openai_api(prompt: str) -> dict:
         )
         
         raw_text = response.choices[0].message.content.strip()
-        logger.info(f"✅ OpenAI API responded ({len(raw_text)} chars)")
+        logger.info(f"OpenAI API responded ({len(raw_text)} chars)")
         
         return json.loads(raw_text), "gpt-4o-mini"
 
     except json.JSONDecodeError as e:
-        logger.error(f"❌ Failed to parse OpenAI response as JSON: {e}")
+        logger.error(f"Failed to parse OpenAI response as JSON: {e}")
         raise ValueError(f"AI mengembalikan format yang tidak valid: {str(e)}")
     except Exception as e:
-        logger.error(f"❌ OpenAI API error: {e}")
+        logger.error(f"OpenAI API error: {e}")
         raise
 
 
@@ -303,7 +303,7 @@ async def create_consultation(
     db: Session = Depends(get_db)
 ):
     """
-    🤖 Endpoint utama: Terima data bisnis + masalah, proses ke AI, simpan ke DB.
+    Endpoint utama: Terima data bisnis + masalah, proses ke AI, simpan ke DB.
     
     Flow:
     1. Validasi input (Pydantic otomatis)
@@ -382,7 +382,7 @@ async def create_consultation(
         db.refresh(consultation)
         
         logger.info(
-            f"✅ Consultation {consultation.id} completed in {processing_time}ms "
+            f"Consultation {consultation.id} completed in {processing_time}ms "
             f"using {model_name}"
         )
         
@@ -415,7 +415,7 @@ async def create_consultation(
         
         db.commit()  # Tetap commit agar record error tersimpan
         
-        logger.error(f"❌ Consultation {consultation.id} failed: {e}")
+        logger.error(f"Consultation {consultation.id} failed: {e}")
         
         raise HTTPException(
             status_code=500,
@@ -432,7 +432,7 @@ async def get_consultations(
     db:         Session = Depends(get_db)
 ):
     """
-    📋 Ambil daftar semua riwayat konsultasi untuk ditampilkan di Dashboard.
+    Ambil daftar semua riwayat konsultasi untuk ditampilkan di Dashboard.
     Mendukung paginasi dan filter by status.
     """
     # Query dengan JOIN untuk mendapat nama bisnis dari relasi
@@ -497,7 +497,7 @@ async def get_consultation_detail(
     db: Session = Depends(get_db)
 ):
     """
-    🔍 Ambil detail lengkap satu konsultasi berdasarkan ID.
+    Ambil detail lengkap satu konsultasi berdasarkan ID.
     Dipakai saat user klik 'Lihat Detail' di dashboard.
     Tidak memanggil AI ulang — data diambil langsung dari database.
     """
@@ -540,7 +540,7 @@ async def get_consultation_detail(
 # ─── ENDPOINT: Statistik Dashboard ───────────────────────────────────────────
 @app.get("/api/stats/", tags=["Dashboard"])
 async def get_stats(db: Session = Depends(get_db)):
-    """📊 Statistik agregat untuk header dashboard."""
+    """Statistik agregat untuk header dashboard."""
     from sqlalchemy import func
     
     total_consultations = db.query(Consultation).count()
@@ -568,7 +568,7 @@ async def get_stats(db: Session = Depends(get_db)):
 # ─── ENDPOINT: Hapus Semua Riwayat Konsultasi ─────────────────────────────
 @app.delete("/api/consultations/clear", tags=["Consultations"])
 async def clear_consultations(db: Session = Depends(get_db)):
-    """🗑️ Hapus semua riwayat konsultasi dari database."""
+    """Hapus semua riwayat konsultasi dari database."""
     deleted_count = db.query(Consultation).count()
 
     if deleted_count == 0:
@@ -592,7 +592,7 @@ async def delete_consultation(
     consultation_id: int,
     db: Session = Depends(get_db)
 ):
-    """🗑️ Hapus satu record konsultasi dari database."""
+    """Hapus satu record konsultasi dari database."""
     consultation = db.query(Consultation).filter(
         Consultation.id == consultation_id
     ).first()
