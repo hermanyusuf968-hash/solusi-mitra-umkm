@@ -139,7 +139,8 @@ INGAT: Respons HANYA berupa JSON murni, tidak ada teks lain."""
 
 def call_gemini_api(prompt: str) -> dict:
     """
-    Panggil Google Gemini API dan kembalikan hasil parsing JSON.
+    Panggil Google Gemini API menggunakan SDK baru google-genai
+    dan kembalikan hasil parsing JSON.
     
     Args:
         prompt: Master prompt yang sudah dibangun
@@ -151,19 +152,18 @@ def call_gemini_api(prompt: str) -> dict:
         Exception jika API gagal atau respons bukan JSON valid
     """
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
         
-        # Konfigurasi API key
-        genai.configure(api_key=GOOGLE_API_KEY)
+        # Konfigurasi client dengan API key
+        client = genai.Client(api_key=GOOGLE_API_KEY)
         
-        logger.info("Sending request to Gemini API...")
+        logger.info("Sending request to Gemini API via google-genai...")
         
-        # Gunakan Gemini Pro dengan text generation
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 temperature=0.4,
                 top_p=0.9,
                 max_output_tokens=4096,
