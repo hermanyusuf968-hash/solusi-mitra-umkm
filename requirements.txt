@@ -15,18 +15,19 @@ cryptography==43.0.3        # Required by PyMySQL untuk koneksi aman
 # --- Data Validation ---
 pydantic==2.13.4
 pydantic-settings==2.14.2   # Manajemen environment variables
+email-validator==2.2.0       # Required by Pydantic EmailStr
 
-# --- Frontend ---
-streamlit==1.58.0
-requests==2.32.3             # HTTP client untuk komunikasi frontend->backend
+# --- HTTP Clients ---
+requests==2.32.3             # HTTP client
+httpx==0.28.1                # Async HTTP client (dibutuhkan FastAPI test client)
 
 # --- AI SDKs ---
-# ⚠️  PERUBAHAN PENTING: google-generativeai sudah DEPRECATED sejak Nov 2025
-# Ganti ke SDK resmi baru: google-genai
-google-genai==2.8.0          # Google Gemini API SDK (BARU - menggantikan google-generativeai)
+google-generativeai==0.7.2   # Google Gemini API SDK
 openai==1.94.0               # OpenAI SDK (opsional, sebagai alternatif)
+
+# --- Production Server ---
+gunicorn==23.0.0             # Production WSGI server (backup)
 
 # --- Utilities ---
 python-dotenv==1.2.2         # Load environment variables dari .env file
-httpx==0.28.1                # Async HTTP client (dibutuhkan FastAPI test client)
 python-multipart==0.0.12     # Form data parsing di FastAPI

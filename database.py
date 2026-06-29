@@ -1,7 +1,7 @@
 # ============================================================
 # database.py
-# Konfigurasi koneksi MySQL menggunakan SQLAlchemy
-# Menyediakan Session Factory dan Base class untuk semua model
+# Konfigurasi koneksi Database menggunakan SQLAlchemy
+# Mendukung: MySQL (Railway/Production), SQLite (Fallback/Dev)
 # ============================================================
 
 import os
@@ -14,30 +14,61 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ─── Ambil Konfigurasi Database dari Environment Variables ─────────────────
-DB_HOST     = os.getenv("DB_HOST", "localhost")
+DB_HOST     = os.getenv("DB_HOST", "")
 DB_PORT     = os.getenv("DB_PORT", "3306")
-DB_USER     = os.getenv("DB_USER", "root")
+DB_USER     = os.getenv("DB_USER", "")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME     = os.getenv("DB_NAME", "ai_konsultasi_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-# ─── Buat Connection String (DATABASE_URL) ─────────────────────────────────
-# Format: dialect+driver://user:password@host:port/dbname
-# pymysql adalah driver Python murni untuk MySQL, tidak butuh MySQL client terinstall
-DATABASE_URL = (
-    f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    f"?charset=utf8mb4"  # utf8mb4 mendukung emoji dan karakter Unicode lengkap
-)
+# ─── Bangun Connection URL ──────────────────────────────────────────────────
+# Prioritas:
+#   1. DATABASE_URL environment variable (Railway auto-inject)
+#   2. Individual DB_* variables (manual config)
+#   3. SQLite local fallback (development / tanpa database eksternal)
+
+if DATABASE_URL:
+    connection_url = DATABASE_URL
+    # Railway mungkin memberikan URL dengan prefix "mysql://" (tanpa driver).
+    # SQLAlchemy 2.x membutuhkan driver eksplisit, jadi kita ubah ke "mysql+pymysql://".
+    if connection_url.startswith("mysql://"):
+        connection_url = connection_url.replace("mysql://", "mysql+pymysql://", 1)
+    # Jika Railway memberikan prefix "postgresql://" (untuk PostgreSQL), ubah juga.
+    if connection_url.startswith("postgres://"):
+        connection_url = connection_url.replace("postgres://", "postgresql://", 1)
+elif DB_HOST:
+    # Format: dialect+driver://user:password@host:port/dbname
+    connection_url = (
+        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"?charset=utf8mb4"  # utf8mb4 mendukung emoji dan karakter Unicode lengkap
+    )
+else:
+    # Fallback ke SQLite untuk development lokal tanpa MySQL
+    connection_url = "sqlite:///./app.db"
+
+# ─── Deteksi tipe database ──────────────────────────────────────────────────
+is_sqlite = connection_url.startswith("sqlite")
 
 # ─── Buat Engine SQLAlchemy ────────────────────────────────────────────────
 # Engine adalah "jantung" koneksi database
 # pool_pre_ping=True: tes koneksi sebelum digunakan (mencegah error koneksi mati)
 # pool_recycle=3600: recycle koneksi setelah 1 jam untuk mencegah timeout MySQL
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    echo=False,  # Ganti ke True untuk debug SQL queries di terminal
-)
+
+engine_kwargs = {
+    "pool_pre_ping": True,
+    "echo": False,  # Ganti ke True untuk debug SQL queries di terminal
+}
+
+# SQLite tidak mendukung pool_recycle dan pool_size options
+if not is_sqlite:
+    engine_kwargs["pool_recycle"] = 3600
+    engine_kwargs["pool_size"] = 5
+    engine_kwargs["max_overflow"] = 10
+else:
+    # SQLite membutuhkan check_same_thread=False untuk FastAPI (multi-threaded)
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(connection_url, **engine_kwargs)
 
 # ─── Session Factory ────────────────────────────────────────────────────────
 # SessionLocal adalah class factory — setiap pemanggilan SessionLocal()
@@ -81,4 +112,5 @@ def init_db():
     # Import models di sini untuk memastikan SQLAlchemy tahu tentang mereka
     from models import Base as ModelBase  # noqa: F401 - import untuk efek samping
     ModelBase.metadata.create_all(bind=engine)
-    print("✅ Database tables initialized successfully.")
+    db_type = "SQLite (local)" if is_sqlite else "MySQL/PostgreSQL (remote)"
+    print(f"✅ Database tables initialized successfully. [{db_type}]")

@@ -52,11 +52,20 @@ app = FastAPI(
 )
 
 # ─── CORS Middleware ─────────────────────────────────────────────────────────
-# Izinkan semua origin untuk development lokal
-# PENTING: Batasi origins saat production!
+# Izinkan origin frontend Vercel serta localhost untuk development.
+# Di production, pastikan domain frontend Anda tetap terdaftar.
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "https://suksesmitraumkm.vercel.app"
+    ).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -151,24 +160,23 @@ def call_gemini_api(prompt: str) -> dict:
         Exception jika API gagal atau respons bukan JSON valid
     """
     try:
-        from google import genai
-        from google.genai import types
+        import google.generativeai as genai
         
-        # Inisialisasi client
-        client = genai.Client(api_key=GOOGLE_API_KEY)
+        # Konfigurasi API key
+        genai.configure(api_key=GOOGLE_API_KEY)
         
         logger.info("📡 Sending request to Gemini API...")
         
-        # Gunakan Gemini 2.5 Flash dengan Structured Output (Pydantic schema)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
+        # Gunakan Gemini Pro dengan text generation
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
                 temperature=0.4,
                 top_p=0.9,
                 max_output_tokens=4096,
                 response_mime_type="application/json",
-                response_schema=AIConsultationResult,
             )
         )
         
@@ -183,7 +191,7 @@ def call_gemini_api(prompt: str) -> dict:
             raw_text = "\n".join(lines[1:-1]).strip()
         
         # Parse JSON
-        return json.loads(raw_text), "gemini-2.5-flash"
+        return json.loads(raw_text), "gemini-1.5-flash"
 
     except json.JSONDecodeError as e:
         logger.error(f"❌ Failed to parse Gemini response as JSON: {e}")
