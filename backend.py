@@ -58,7 +58,7 @@ allowed_origins = [
     origin.strip().rstrip("/")
     for origin in os.getenv(
         "CORS_ALLOWED_ORIGINS",
-        "https://solusimitraumkm.vercel.app"
+        "https://solusimitraumkm.vercel.app,http://localhost:8000"
     ).split(",")
     if origin.strip()
 ]
