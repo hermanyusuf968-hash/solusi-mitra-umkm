@@ -53,30 +53,13 @@ app = FastAPI(
 
 # ─── CORS Middleware ─────────────────────────────────────────────────────────
 # Izinkan semua origin agar frontend Vercel dan localhost bisa mengakses backend.
-# Untuk keamanan lebih lanjut, ganti "*" dengan daftar origin spesifik.
-cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
-if cors_origins_env:
-    allowed_origins = [
-        origin.strip().rstrip("/")
-        for origin in cors_origins_env.split(",")
-        if origin.strip()
-    ]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-else:
-    # Default: izinkan semua origin (aman untuk API publik)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 
@@ -288,19 +271,12 @@ async def root():
 
 
 @app.get("/health", tags=["Health"])
-async def health_check(db: Session = Depends(get_db)):
-    """Health check termasuk koneksi database."""
-    try:
-        # Test query sederhana untuk cek koneksi DB
-        db.execute(__import__('sqlalchemy').text("SELECT 1"))
-        db_status = "connected"
-    except Exception as e:
-        db_status = f"error: {str(e)}"
-    
+async def health_check():
+    """Health check ringan — tidak bergantung pada DB agar preflight CORS tidak gagal."""
     return {
-        "status": "healthy" if db_status == "connected" else "degraded",
-        "database": db_status,
+        "status": "healthy",
         "ai_provider": AI_PROVIDER,
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
