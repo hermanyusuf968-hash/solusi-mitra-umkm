@@ -52,24 +52,32 @@ app = FastAPI(
 )
 
 # ─── CORS Middleware ─────────────────────────────────────────────────────────
-# Izinkan origin frontend Vercel serta localhost untuk development.
-# Di production, pastikan domain frontend Anda tetap terdaftar.
-allowed_origins = [
-    origin.strip().rstrip("/")
-    for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "https://solusimitraumkm.vercel.app,http://localhost:8000"
-    ).split(",")
-    if origin.strip()
-]
+# Izinkan semua origin agar frontend Vercel dan localhost bisa mengakses backend.
+# Untuk keamanan lebih lanjut, ganti "*" dengan daftar origin spesifik.
+cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "")
+if cors_origins_env:
+    allowed_origins = [
+        origin.strip().rstrip("/")
+        for origin in cors_origins_env.split(",")
+        if origin.strip()
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # Default: izinkan semua origin (aman untuk API publik)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 # ─── Inisialisasi Database saat Startup ──────────────────────────────────────
